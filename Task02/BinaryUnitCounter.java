@@ -75,11 +75,17 @@ public class BinaryUnitCounter implements Serializable {
         return sb.toString();
     }
     
+    // Factory Method
+    public static BinaryUnitCounter create(double[] args) {
+        BinaryUnitCounter buc = new BinaryUnitCounter(args);
+        buc.calculate();
+        return buc;
+    }
+    
     public static void main(String[] args) throws Exception {
         double[] arguments = {0.1, 0.2, 0.3, 0.4};
         
-        BinaryUnitCounter buc = new BinaryUnitCounter(arguments);
-        buc.calculate();
+        BinaryUnitCounter buc = BinaryUnitCounter.create(arguments);
         System.out.println(buc);
         
         // серіалізація та десеріалізація
@@ -93,7 +99,7 @@ public class BinaryUnitCounter implements Serializable {
         
         System.out.println(restoredBuc);
         
-        // перевірка правильності обчислень та серіалізації/десеріалізації
+        // перевірка правильності обчислень і серіалізації/десеріалізації
         if (buc.getBinaryUnitCount() == restoredBuc.getBinaryUnitCount()) {
             System.out.println("Serialization/Deserialization Test Passed!");
         } else {
