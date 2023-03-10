@@ -206,4 +206,4 @@ public class BinaryUnitCounter implements Serializable {
 
 2. Змінений код -
 
-<img src="https://github.com/MargoBB/35_Berlin_Margo/blob/main/src/2.png">
+<img src="https://github.com/MargoBB/35_Berlin_Margo/blob/main/src/02.png">
