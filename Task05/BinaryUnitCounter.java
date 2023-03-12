@@ -1,7 +1,8 @@
 import java.io.*;
 import java.util.Scanner;
+import java.util.concurrent.*;
 
-public class BinaryUnitCounter implements Serializable{
+public class BinaryUnitCounter implements Serializable, Runnable {
     private static final long serialVersionUID = 1L;
     private double[] args;
     private double[] results;
@@ -22,6 +23,39 @@ public class BinaryUnitCounter implements Serializable{
         return sb.toString();
     }
     
+    public void run() {
+        // Знаходження мінімального значення
+        double min = Double.MAX_VALUE;
+        for (int i = 0; i < args.length; i++) {
+            if (args[i] < min) {
+                min = args[i];
+            }
+        }
+        results[0] = min;
+    
+        // Знаходження максимального значення
+        double max = Double.MIN_VALUE;
+        for (int i = 0; i < args.length; i++) {
+            if (args[i] > max) {
+                max = args[i];
+             }
+        }
+        results[1] = max;
+        
+        // Обчислення середнього значення
+        double sum = 0;
+        for (int i = 0; i < args.length; i++) {
+            sum += args[i];
+        }
+        double mean = sum / args.length;
+        results[2] = mean;
+        
+        
+        // Встановлення кількість двійкових одиниць
+        String binaryStr = Integer.toBinaryString((int)mean);
+        binaryUnitCount = binaryStr.length();
+    }
+
     public BinaryUnitCounter(double[] args) {
         this.args = args;
         this.results = new double[args.length];
@@ -59,6 +93,10 @@ public class BinaryUnitCounter implements Serializable{
     public int getBinaryUnitCount() {
         return binaryUnitCount;
     }
+
+    public double[] getResults() {
+        return results;
+    }
     
     public String toString() {
         StringBuilder sb = new StringBuilder();
@@ -77,6 +115,27 @@ public class BinaryUnitCounter implements Serializable{
     public static void main(String[] args) throws Exception {
         double[] arguments = {0.1, 0.2, 0.3, 0.4};
         
+        BinaryUnitCounter buc = new BinaryUnitCounter(arguments);
+        
+        ExecutorService executor = Executors.newFixedThreadPool(3);
+
+        Future<?> task1 = executor.submit(buc);
+        Future<?> task2 = executor.submit(buc);
+        Future<?> task3 = executor.submit(buc);
+
+        task1.get();
+        task2.get();
+        task3.get();
+
+        double[] results = buc.getResults();
+
+        System.out.println("Minimum value: " + results[0]);
+        System.out.println("Maximum value: " + results[1]);
+        System.out.println("Average value: " + results[2]);
+        System.out.println("Binary unit count: " + buc.getBinaryUnitCount());
+
+        executor.shutdown();
+
         BinaryUnitCounter counter = new BinaryUnitCounter(arguments);
         Scanner scanner = new Scanner(System.in);
 
@@ -105,10 +164,6 @@ public class BinaryUnitCounter implements Serializable{
         }
 
         counter.calculateAndUndo();
-        
-        Fabricatable fabricator = new BinaryUnitCounterFabricator(arguments);
-        BinaryUnitCounter buc = fabricator.fabricate();
-        System.out.println(buc);
 
         int binaryUnitCount = buc.getBinaryUnitCount();
 
@@ -133,9 +188,6 @@ public class BinaryUnitCounter implements Serializable{
             System.out.println("Serialization/Deserialization Test Failed!");
         }
 
-        ResultsStorage rs = ResultsStorage.load("results.dat");
-        buc.results = rs.getResults();
-
         System.out.println(buc);
                 
                 // Створення об’єкту, що реалізує інтерфейс ResultsDisplay
@@ -146,6 +198,7 @@ public class BinaryUnitCounter implements Serializable{
                 
                 String table = BinaryUnitCounter.createTable(counter.args, counter.results, counter.binaryUnitCount);
                 System.out.println(table);
+
             }
         }
         
