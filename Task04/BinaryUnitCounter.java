@@ -1,18 +1,41 @@
 import java.io.*;
 import java.util.Scanner;
 
-public class BinaryUnitCounter implements Serializable {
+public class BinaryUnitCounter implements Serializable{
     private static final long serialVersionUID = 1L;
     private double[] args;
     private double[] results;
     private transient int binaryUnitCount; // transient поле
     private int lastBinaryUnitCount;
+
+    public static String createTable(double[] args, double[] results, int binaryUnitCount) {
+        StringBuilder sb = new StringBuilder();
+        // Add column headers
+        sb.append(String.format("%-10s %-10s\n", "Arg", "Result"));
+
+        // Add rows with data
+        for (int i = 0; i < args.length; i++) {
+            sb.append(String.format("%-10.2f %-10.2f\n", args[i], results[i]));
+        }
+        // Add footer with binary unit count
+        sb.append(String.format("\nBinary Unit Count: %d", binaryUnitCount));
+        return sb.toString();
+    }
     
     public BinaryUnitCounter(double[] args) {
         this.args = args;
         this.results = new double[args.length];
         this.binaryUnitCount = 0;
         this.lastBinaryUnitCount = 0;
+    }
+
+    public void calculateAndUndo() {
+        calculate();
+        undo();
+    }
+
+    public void undo() {
+        binaryUnitCount = lastBinaryUnitCount;
     }
     
     public void calculate() {
@@ -24,19 +47,17 @@ public class BinaryUnitCounter implements Serializable {
         double mean = sum / args.length;
         String binaryStr = Integer.toBinaryString((int)mean);
         binaryUnitCount = binaryStr.length();
-    }
 
-    public void calculateAndUndo() {
-        calculate();
-        undo();
+        ResultsStorage rs = new ResultsStorage(results);
+        try {
+            rs.save("results.dat");
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
     
     public int getBinaryUnitCount() {
         return binaryUnitCount;
-    }
-
-    public void undo() {
-        binaryUnitCount = lastBinaryUnitCount;
     }
     
     public String toString() {
@@ -55,7 +76,7 @@ public class BinaryUnitCounter implements Serializable {
     
     public static void main(String[] args) throws Exception {
         double[] arguments = {0.1, 0.2, 0.3, 0.4};
-
+        
         BinaryUnitCounter counter = new BinaryUnitCounter(arguments);
         Scanner scanner = new Scanner(System.in);
 
@@ -82,13 +103,18 @@ public class BinaryUnitCounter implements Serializable {
                     break;
             }
         }
-    
+
         counter.calculateAndUndo();
         
-        BinaryUnitCounter buc = new BinaryUnitCounter(arguments);
-        buc.calculate();
+        Fabricatable fabricator = new BinaryUnitCounterFabricator(arguments);
+        BinaryUnitCounter buc = fabricator.fabricate();
         System.out.println(buc);
-        
+
+        int binaryUnitCount = buc.getBinaryUnitCount();
+
+        Display binaryDisplay = DisplayFactory.createDisplay("binary", binaryUnitCount);
+        binaryDisplay.display();
+
         // серіалізація та десеріалізація
         ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream("buc.ser"));
         oos.writeObject(buc);
@@ -106,5 +132,33 @@ public class BinaryUnitCounter implements Serializable {
         } else {
             System.out.println("Serialization/Deserialization Test Failed!");
         }
-    }
-}
+
+        ResultsStorage rs = ResultsStorage.load("results.dat");
+        buc.results = rs.getResults();
+
+        System.out.println(buc);
+                
+                // Створення об’єкту, що реалізує інтерфейс ResultsDisplay
+                ResultsDisplay resultsDisplay = new ConsoleResultsDisplay();
+                
+                // Для відображення результатів обчислення використовуємо метод displayResults
+                resultsDisplay.displayResults(counter.getBinaryUnitCount(), counter.toString());
+                
+                String table = BinaryUnitCounter.createTable(counter.args, counter.results, counter.binaryUnitCount);
+                System.out.println(table);
+            }
+        }
+        
+        // Інтерфейс для відображення результатів
+        interface ResultsDisplay {
+            void displayResults(int binaryUnitCount, String resultsString);
+        }
+        
+        // Реалізація ResultsDisplay, яка відображає результати на консолі
+        class ConsoleResultsDisplay implements ResultsDisplay {
+            public void displayResults(int binaryUnitCount, String resultsString) {
+                System.out.println("Binary Unit Count: " + binaryUnitCount);
+                System.out.println("Results: ");
+                System.out.println(resultsString);
+            }
+    } 
